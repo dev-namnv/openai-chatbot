@@ -13,4 +13,10 @@ export class AppController {
     await this.cacheManager.reset();
     return 'Cache was clear!';
   }
+
+  @ApiTags('App')
+  @Get('')
+  async home() {
+    return 'Hello!';
+  }
 }
