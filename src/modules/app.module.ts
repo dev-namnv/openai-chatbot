@@ -7,7 +7,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'path';
 import { timeout } from 'src/common/timeout';
-import configuration from 'src/config/configuration';
+import configuration from 'src/config/enviroment';
 import { DatabaseModule } from 'src/database';
 import { HttpErrorFilter } from 'src/shared/httpError.filter';
 import { TimeoutMiddleware } from 'src/shared/timeout.middleware';
@@ -17,7 +17,7 @@ import { AccountModule } from './account/account.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { OpenAIModule } from './openai/openai.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import { PineconeModule } from './pinecone/pinecone.module';
 
 @Module({
@@ -59,10 +59,10 @@ import { PineconeModule } from './pinecone/pinecone.module';
       },
     ]),
     LoggerModule,
-    OpenAIModule,
-    PineconeModule,
     AccountModule,
     AuthModule,
+    ChatbotModule,
+    PineconeModule,
   ],
   controllers: [AppController],
   providers: [

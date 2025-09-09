@@ -1,2 +1,2 @@
 export * from './CacheConfig';
-export * from './configuration';
+export * from './enviroment';

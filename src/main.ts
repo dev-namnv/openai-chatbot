@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import basicAuth from 'express-basic-auth';
-import configuration from './config/configuration';
+import enviroment from './config/enviroment';
 import { AppModule } from './modules/app.module';
 
 async function bootstrap(): Promise<void> {
@@ -15,7 +15,7 @@ async function bootstrap(): Promise<void> {
       challenge: true,
     }),
   );
-  const config = configuration();
+  const config = enviroment();
   const options = new DocumentBuilder()
     .setTitle('API Documents')
     .setVersion('1.0.0')
@@ -23,7 +23,7 @@ async function bootstrap(): Promise<void> {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .setDescription('AIO Streaming APIs')
+    .setDescription('Chatbot APIs')
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api-docs', app, document);

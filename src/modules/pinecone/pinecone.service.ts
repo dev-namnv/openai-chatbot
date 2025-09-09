@@ -1,110 +1,85 @@
-import {
-  forwardRef,
-  Inject,
-  Injectable,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Index, Pinecone } from '@pinecone-database/pinecone';
+import { customAlphabet } from 'nanoid';
 import slugify from 'slugify';
-import configuration from 'src/config/configuration';
-import { OpenAIService } from '../openai/openai.service';
+import { LoggerService } from 'src/common/logger';
+import enviroment from 'src/config/enviroment';
+import { ChatbotRole } from 'src/schemas/chatbot';
+
+export enum DimensionSize {
+  SMALL = 1536,
+  LARGE = 3072,
+}
 
 @Injectable()
-export class PineconeService implements OnModuleInit {
-  constructor(
-    @Inject(forwardRef(() => OpenAIService))
-    private readonly openAIService: OpenAIService,
-  ) {}
-  private pinecone: Pinecone;
-  private index: Index;
+export class PineconeService {
+  private client: Pinecone;
+  private nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
-  async onModuleInit() {
-    this.pinecone = new Pinecone({
-      apiKey: configuration().pinecone.apiKey,
+  constructor(private readonly logger: LoggerService) {
+    this.client = new Pinecone({
+      apiKey: enviroment().pinecone.apiKey,
     });
-
-    this.index = this.pinecone.Index(configuration().pinecone.indexName);
   }
 
-  async createIndex() {
-    return this.pinecone.createIndexForModel({
-      name: 'integrated-dense-js',
-      cloud: 'aws',
-      region: 'us-east-1',
-      embed: {
-        model: 'llama-text-embed-v2',
-        fieldMap: { text: 'chunk_text' },
+  /**
+   * Tạo index mới nếu chưa tồn tại
+   */
+  async createIndex(role: ChatbotRole, size: DimensionSize) {
+    const indexName = this.generateIndexName(role);
+    this.logger.log(`Đang tạo index "${indexName}"...`, PineconeService.name);
+    await this.client.createIndex({
+      name: indexName,
+      vectorType: 'dense',
+      dimension: size,
+      metric: 'cosine',
+      spec: {
+        serverless: {
+          cloud: 'aws',
+          region: 'us-east-1',
+        },
       },
-      waitUntilReady: true,
+      deletionProtection: 'disabled',
+      tags: { environment: 'development' },
     });
+    this.logger.log(`Index "${indexName}" đã được tạo`, PineconeService.name);
+    return indexName;
   }
 
-  async upsertVector(
-    id: string,
-    embedding: number[],
-    metadata: Record<string, any>,
+  /**
+   * Kết nối tới index đã có
+   */
+  connectToIndex(indexName: string): Index | null {
+    const index = this.client.Index(indexName);
+    this.logger.log(
+      `Đã kết nối tới index "${indexName}"`,
+      PineconeService.name,
+    );
+    return index || null;
+  }
+
+  async upsert(
+    indexName: string,
+    data: Array<{ id: string; values: number[]; metadata?: any }>,
   ) {
-    await this.index.upsert([
-      {
-        id,
-        values: embedding,
-        metadata,
-      },
-    ]);
+    const index = this.connectToIndex(indexName);
+    // tuỳ SDK version có thể khác; cấu trúc phổ biến:
+    await index.upsert(data);
+    this.logger.log(
+      `Upserted ${data.length} vector(s) into ${indexName}`,
+      PineconeService.name,
+    );
   }
 
-  async queryVector(values: number[], topK = 3) {
-    const result = await this.index.query({
-      vector: values,
-      topK,
-      includeMetadata: true,
-    });
-    return result.matches;
-  }
-
-  async getContextByQuestion(question: string): Promise<string> {
-    // Step 1: Embed the question
-    const embedding = await this.openAIService.getEmbedding(question);
-
-    // Step 2: Query Pinecone
-    const results = await this.queryVector(embedding, 3);
-    const context = results
-      .filter((r) => r.score >= 0.75)
-      .map((r) => r.metadata.text)
-      .join('\n---\n');
-
-    if (context) {
-      return context;
-    }
-
-    // Step 4: Get Definition from OpenAI if the context can be found.
-    const definition = await this.openAIService.getDefinition(question);
-
-    // Step 5: Create embedding from that definition
-    const definitionEmbedding =
-      await this.openAIService.getEmbedding(definition);
-
-    // Step 6: Upsert to Pinecone
-    await this.upsertVector(slugify(question), definitionEmbedding, {
-      text: definition,
+  generateIndexName(name: string): string {
+    const base = slugify(name, {
+      lower: true,
+      strict: true,
     });
 
-    // Step 7: Query by the embedding of definition
-    const updatedResults = await this.queryVector(definitionEmbedding, 3);
-    const updatedContext = updatedResults
-      .filter((r) => r.score >= 0.75)
-      .map((r) => r.metadata.text)
-      .join('\n---\n');
+    const id = this.nanoid();
+    const indexName = `${base}-${id}`.slice(0, 63);
 
-    if (!updatedContext) {
-      throw new NotFoundException('Context was not found even after upsert');
-    }
-
-    return updatedContext;
-  }
-
-  async deleteVector(id: string) {
-    await this.index.deleteOne(id);
+    return indexName;
   }
 }

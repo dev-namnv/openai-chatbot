@@ -1,11 +1,14 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { PineconeModule } from '../pinecone/pinecone.module';
-import { OpenAIController } from './openai.controller';
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Knowledge, KnowledgeSchema } from 'src/schemas/knowledge';
 import { OpenAIService } from './openai.service';
 
 @Module({
-  imports: [forwardRef(() => PineconeModule)],
-  controllers: [OpenAIController],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Knowledge.name, schema: KnowledgeSchema },
+    ]),
+  ],
   providers: [OpenAIService],
   exports: [OpenAIService],
 })

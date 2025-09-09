@@ -13,7 +13,7 @@ import { Facebook } from 'fb';
 import { google } from 'googleapis';
 import { Model } from 'mongoose';
 import { Observable, throwError } from 'rxjs';
-import configuration from 'src/config/configuration';
+import enviroment from 'src/config/enviroment';
 import { MongoId } from 'src/interfaces/mongoose.interface';
 import { Account } from 'src/schemas/account';
 import { LoginResponse } from './auth.controller';
@@ -91,8 +91,8 @@ export class AuthService {
   ): Promise<LoginResponse | Observable<never>> {
     try {
       const oauth2Client = new google.auth.OAuth2(
-        configuration().google.GOOGLE_CLIENT_ID,
-        configuration().google.GOOGLE_CLIENT_SECRET,
+        enviroment().google.GOOGLE_CLIENT_ID,
+        enviroment().google.GOOGLE_CLIENT_SECRET,
       );
       try {
         await oauth2Client.getTokenInfo(loginSocialDto.accessToken);
@@ -147,8 +147,8 @@ export class AuthService {
     try {
       const fb = new Facebook({
         version: 'v8.0',
-        appId: configuration().facebook.FACEBOOK_CLIENT_ID,
-        appSecret: configuration().facebook.FACEBOOK_CLIENT_SECRET,
+        appId: enviroment().facebook.FACEBOOK_CLIENT_ID,
+        appSecret: enviroment().facebook.FACEBOOK_CLIENT_SECRET,
         accessToken: loginSocialDto.accessToken,
         timeout: 30000,
       });
@@ -248,7 +248,7 @@ export class AuthService {
 
   async findByAccessToken(accessToken: string): Promise<Account | null> {
     const payload: { accountId: string } = this.jwtService.verify(accessToken, {
-      secret: configuration().jwt.secret,
+      secret: enviroment().jwt.secret,
     });
     if (!payload.accountId) {
       return null;

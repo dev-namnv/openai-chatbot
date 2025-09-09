@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import configuration from 'src/config/configuration';
+import enviroment from 'src/config/enviroment';
 
 @Module({
   imports: [
     MongooseModule.forRootAsync({
       useFactory: async () => ({
-        uri: configuration().database,
+        uri: enviroment().database,
         autoCreate: true,
       }),
     }),

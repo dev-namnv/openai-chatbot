@@ -1,12 +1,9 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { OpenAIModule } from '../openai/openai.module';
-import { PineconeController } from './pinecone.controller';
+import { Global, Module } from '@nestjs/common';
 import { PineconeService } from './pinecone.service';
 
+@Global()
 @Module({
-  imports: [forwardRef(() => OpenAIModule)],
-  controllers: [PineconeController],
-  exports: [PineconeService],
   providers: [PineconeService],
+  exports: [PineconeService],
 })
 export class PineconeModule {}

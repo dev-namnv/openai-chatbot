@@ -4,7 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Model } from 'mongoose';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Observable, throwError } from 'rxjs';
-import configuration from 'src/config/configuration';
+import enviroment from 'src/config/enviroment';
 import { Account } from 'src/schemas/account';
 
 export interface JwtPayload {
@@ -17,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configuration().jwt.secret,
+      secretOrKey: enviroment().jwt.secret,
     });
   }
 
