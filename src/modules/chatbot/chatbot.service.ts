@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { nanoid } from 'nanoid';
 import { ChatCompletionMessageParam } from 'openai/resources/index';
 import { LoggerService } from 'src/common/logger';
+import enviroment from 'src/config/enviroment';
 import { Chatbot } from 'src/schemas/chatbot';
 import { Knowledge } from 'src/schemas/knowledge';
 import { Sender } from 'src/schemas/message';
@@ -11,7 +17,7 @@ import { MongoId } from '../../interfaces/mongoose.interface';
 import { Account } from '../../schemas/account';
 import { ApiKeyService } from '../apikey/apikey.service';
 import { OpenAIService } from '../openai/openai.service';
-import { DimensionSize, PineconeService } from '../pinecone/pinecone.service';
+import { PineconeService } from '../pinecone/pinecone.service';
 import { SessionService } from '../session/session.service';
 import { ConfigureChatbotDto } from './dto/ConfigureChatbot.dto';
 
@@ -25,6 +31,7 @@ export class ChatbotService {
     private readonly pineconeService: PineconeService,
     private readonly openaiService: OpenAIService,
     private readonly logger: LoggerService,
+    @Inject(forwardRef(() => ApiKeyService))
     private readonly apiKeyService: ApiKeyService,
     private readonly sessionService: SessionService,
   ) {}
@@ -38,45 +45,47 @@ export class ChatbotService {
     message: string,
     sessionId?: MongoId,
   ) {
-    // Lấy thông tin chatbot
-    const chatbot = await this.findChatbot(chatbotId, accountId);
-    if (!!chatbot) {
-      throw new NotFoundException('Chatbot not found');
+    try {
+      // Lấy thông tin chatbot
+      const chatbot = await this.findChatbot(chatbotId, accountId);
+      if (!chatbot) {
+        throw new NotFoundException('Chatbot not found');
+      }
+
+      const systemPrompt = await this.getSystemPrompt(chatbot, message);
+      const history = sessionId
+        ? await this.getCompletionMessages(new MongoId(sessionId))
+        : [];
+
+      // Gửi vào OpenAI
+      const response = await this.openaiService.chat(
+        systemPrompt,
+        message,
+        history,
+      );
+
+      return {
+        answer: response,
+        // sources: matches.map((m) => ({
+        //   text: m.metadata?.text,
+        //   score: m.score,
+        // })),
+      };
+    } catch (error: any) {
+      this.logger.error(error);
     }
-
-    const systemPrompt = await this.getSystemPrompt(chatbot, message);
-    const history = sessionId
-      ? await this.getCompletionMessages(new MongoId(sessionId))
-      : [];
-
-    // Gửi vào OpenAI
-    const response = await this.openaiService.chat(
-      systemPrompt,
-      message,
-      history,
-    );
-
-    return {
-      answer: response,
-      // sources: matches.map((m) => ({
-      //   text: m.metadata?.text,
-      //   score: m.score,
-      // })),
-    };
   }
 
   /**
    * Train dữ liệu cho chatbot (lưu vào Mongo + Pinecone)
    */
-  async training(accountId: MongoId, chatbotId: string, texts: string[]) {
-    console.log(texts);
-    const chatbot = await this.chatbotModel.findById(chatbotId);
-    console.log(accountId, chatbot.account);
-    if (!chatbot || !chatbot.account.equals(accountId)) {
+  async training(accountId: any, chatbotId: string, texts: string[]) {
+    const chatbot = await this.findChatbot(new MongoId(chatbotId), accountId);
+    if (!chatbot) {
       throw new NotFoundException('Chatbot not found');
     }
 
-    const index = this.pineconeService.connectToIndex(chatbot.indexName);
+    const index = this.pineconeService.index;
 
     // Duyệt qua từng text để training
     const results = [];
@@ -100,7 +109,7 @@ export class ChatbotService {
         {
           id: pineconeId,
           values: vector,
-          metadata: { text },
+          metadata: { chatbotId: chatbotId, text },
         },
       ]);
 
@@ -114,9 +123,9 @@ export class ChatbotService {
     return results;
   }
 
-  async findChatbot(chatbotId: MongoId, accountId: MongoId) {
+  async findChatbot(chatbotId: MongoId, accountId: any) {
     const chatbot = await this.chatbotModel.findOne({
-      id: chatbotId,
+      _id: chatbotId,
       account: accountId,
     });
     return chatbot;
@@ -138,11 +147,12 @@ export class ChatbotService {
     const queryEmbedding = await this.openaiService.getEmbedding(message);
 
     // Query Pinecone để lấy top context
-    const index = this.pineconeService.connectToIndex(chatbot.indexName);
+    const index = this.pineconeService.index;
     const queryResult = await index.query({
       topK: 5,
       vector: queryEmbedding,
       includeMetadata: true,
+      filter: { chatbotId: String(chatbot.id) },
     });
 
     const matches = queryResult.matches || [];
@@ -176,26 +186,28 @@ export class ChatbotService {
    * @param dto params
    * @returns Chatbot
    */
-  async configure(
-    account: Account,
-    dto: ConfigureChatbotDto,
-  ): Promise<Chatbot> {
-    const { role, metadata, description, ownerName } = dto;
+  async configure(account: Account, dto: ConfigureChatbotDto) {
+    const { role, metadata, description, ownerName, type } = dto;
 
     // Create Pinecone index
-    const indexName = await this.pineconeService.createIndex(
+    // const indexName = await this.pineconeService.createIndex(
+    //   role,
+    //   DimensionSize.SMALL,
+    // );
+    const indexName = enviroment().pinecone.indexName;
+    const chatbot = await this.chatbotModel.create({
+      account: account._id,
       role,
-      DimensionSize.SMALL,
-    );
-
-    return this.chatbotModel.create({
-      account: account.id,
-      role,
+      type,
       indexName,
       description,
       metadata,
       ownerName,
     });
+
+    const apiKey = await this.apiKeyService.generateApiKey(account, chatbot.id);
+
+    return { chatbot, apiKey: apiKey.key };
   }
 
   /**

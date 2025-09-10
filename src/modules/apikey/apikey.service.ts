@@ -1,21 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomBytes } from 'crypto';
 import { Model } from 'mongoose';
 import { Account } from 'src/schemas/account';
 import { ApiKey } from 'src/schemas/apikey';
-import { Chatbot } from 'src/schemas/chatbot';
 import { MongoId } from '../../interfaces/mongoose.interface';
+import { ChatbotService } from '../chatbot/chatbot.service';
 
 @Injectable()
 export class ApiKeyService {
-  constructor(@InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKey>) {}
+  constructor(
+    @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKey>,
+    @Inject(forwardRef(() => ChatbotService))
+    private readonly chatbotService: ChatbotService,
+  ) {}
 
-  async generateApiKey(account: Account, chatbot: Chatbot): Promise<ApiKey> {
+  async generateApiKey(account: Account, chatbotId: MongoId): Promise<ApiKey> {
     const key = this.createKey();
+    const isExist = await this.chatbotService.findChatbot(
+      chatbotId,
+      account._id,
+    );
+    if (!isExist) {
+      throw new NotFoundException('Chatbot not found!');
+    }
     return this.apiKeyModel.create({
-      account: account.id,
-      chatbot: chatbot.id,
+      account: account._id,
+      chatbot: chatbotId,
       key,
     });
   }

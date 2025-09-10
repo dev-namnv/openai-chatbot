@@ -4,7 +4,7 @@ import { customAlphabet } from 'nanoid';
 import slugify from 'slugify';
 import { LoggerService } from 'src/common/logger';
 import enviroment from 'src/config/enviroment';
-import { ChatbotRole } from 'src/schemas/chatbot';
+import { ChatbotType } from 'src/schemas/chatbot';
 
 export enum DimensionSize {
   SMALL = 1536,
@@ -14,19 +14,21 @@ export enum DimensionSize {
 @Injectable()
 export class PineconeService {
   private client: Pinecone;
+  public index: Index;
   private nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
   constructor(private readonly logger: LoggerService) {
     this.client = new Pinecone({
       apiKey: enviroment().pinecone.apiKey,
     });
+    this.index = this.client.Index(enviroment().pinecone.indexName);
   }
 
   /**
    * Tạo index mới nếu chưa tồn tại
    */
-  async createIndex(role: ChatbotRole, size: DimensionSize) {
-    const indexName = this.generateIndexName(role);
+  async createIndex(type: ChatbotType, size: DimensionSize) {
+    const indexName = this.generateIndexName(type);
     this.logger.log(`Đang tạo index "${indexName}"...`, PineconeService.name);
     await this.client.createIndex({
       name: indexName,
@@ -46,23 +48,11 @@ export class PineconeService {
     return indexName;
   }
 
-  /**
-   * Kết nối tới index đã có
-   */
-  connectToIndex(indexName: string): Index | null {
-    const index = this.client.Index(indexName);
-    this.logger.log(
-      `Đã kết nối tới index "${indexName}"`,
-      PineconeService.name,
-    );
-    return index || null;
-  }
-
   async upsert(
     indexName: string,
     data: Array<{ id: string; values: number[]; metadata?: any }>,
   ) {
-    const index = this.connectToIndex(indexName);
+    const index = this.index;
     // tuỳ SDK version có thể khác; cấu trúc phổ biến:
     await index.upsert(data);
     this.logger.log(

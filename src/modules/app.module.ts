@@ -14,6 +14,7 @@ import { TimeoutMiddleware } from 'src/shared/timeout.middleware';
 import { TransformInterceptor } from 'src/shared/transform.interceptor';
 import { LoggerModule } from '../common/logger';
 import { AccountModule } from './account/account.module';
+import { ApiKeyModule } from './apikey/apikey.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -63,6 +64,7 @@ import { PineconeModule } from './pinecone/pinecone.module';
     AuthModule,
     ChatbotModule,
     PineconeModule,
+    ApiKeyModule,
   ],
   controllers: [AppController],
   providers: [

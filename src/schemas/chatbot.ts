@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Account } from './account';
 
-export enum ChatbotRole {
+export enum ChatbotType {
   personal = 'personal',
   business = 'business',
 }
@@ -18,8 +18,11 @@ export class Chatbot extends Document {
   @Prop()
   ownerName: string;
 
-  @Prop({ enum: ChatbotRole })
-  role: ChatbotRole;
+  @Prop({ enum: ChatbotType })
+  type: ChatbotType;
+
+  @Prop()
+  role: string;
 
   @Prop({ default: 1536 })
   size: number;

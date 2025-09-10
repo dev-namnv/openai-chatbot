@@ -5,8 +5,11 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
-import { ChatbotRole } from 'src/schemas/chatbot';
+import { DimensionSize } from 'src/modules/pinecone/pinecone.service';
+import { ChatbotType } from 'src/schemas/chatbot';
 
 export class ConfigureChatbotDto {
   @ApiProperty()
@@ -14,20 +17,26 @@ export class ConfigureChatbotDto {
   @IsNotEmpty()
   ownerName: string;
 
-  @ApiProperty({ enum: ChatbotRole })
-  @IsEnum(ChatbotRole)
+  @ApiProperty({ enum: ChatbotType })
+  @IsEnum(ChatbotType)
   @IsNotEmpty()
-  role: ChatbotRole;
+  type: ChatbotType;
+
+  @ApiProperty()
+  @MaxLength(32)
+  @MinLength(2)
+  @IsNotEmpty()
+  role: string;
 
   @ApiProperty({ default: '', required: false })
   @IsString()
   @IsOptional()
   description: string;
 
-  @ApiProperty({ default: '', required: false })
-  @IsString()
+  @ApiProperty({ required: false })
+  @IsEnum(DimensionSize)
   @IsOptional()
-  size: string;
+  size: DimensionSize;
 
   @ApiProperty({ default: {}, type: Object })
   @IsObject()

@@ -7,10 +7,18 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { LoggerService } from 'src/common/logger';
 import { MongoId } from 'src/interfaces/mongoose.interface';
 import { Sender } from 'src/schemas/message';
+import { ApiKeyService } from '../apikey/apikey.service';
 import { ChatbotService } from '../chatbot/chatbot.service';
 import { SessionService } from '../session/session.service';
+
+interface ExtractIds {
+  accountId: MongoId | null;
+  chatbotId: MongoId | null;
+  apiKey: string | null;
+}
 
 @WebSocketGateway({
   cors: { origin: '*' }, // TODO: cấu hình origin cho production
@@ -22,18 +30,22 @@ export class ChatGateway implements OnGatewayConnection {
   constructor(
     private readonly chatbotService: ChatbotService,
     private readonly sessionService: SessionService,
+    private readonly logger: LoggerService,
+    private readonly apiKeyService: ApiKeyService,
   ) {}
 
   async handleConnection(client: Socket) {
-    const { apiKey, chatbotId, accountId } = this.extractIds(client);
+    const { chatbotId } = await this.extractIds(client);
 
-    if (!apiKey || !chatbotId || !accountId) {
+    if (!chatbotId) {
       client.disconnect();
       return;
     }
 
     // TODO: verify apiKey khớp với accountId + chatbotId
-    console.log(`🔌 Client connected: ${client.id} (chatbotId=${chatbotId})`);
+    this.logger.log(
+      `🔌 Client connected: ${client.id} (chatbotId=${chatbotId})`,
+    );
   }
 
   @SubscribeMessage('chat')
@@ -41,9 +53,10 @@ export class ChatGateway implements OnGatewayConnection {
     @MessageBody() data: { sessionId?: string; message: string },
     @ConnectedSocket() client: Socket,
   ) {
+    this.logger.log('User sent a message ' + data.message);
     let sessionId = data.sessionId ? new MongoId(data.sessionId) : undefined;
     const message = data.message;
-    const { chatbotId, accountId } = this.extractIds(client);
+    const { chatbotId, accountId } = await this.extractIds(client);
 
     // Save user's message
     const userMessage = await this.sessionService.saveMessage(
@@ -55,7 +68,6 @@ export class ChatGateway implements OnGatewayConnection {
     if (!sessionId) {
       sessionId = userMessage.session;
     }
-
     // emit lại message user
     client.emit('chat', {
       sessionId,
@@ -77,6 +89,7 @@ export class ChatGateway implements OnGatewayConnection {
       botReply.answer,
       sessionId,
     );
+    this.logger.log('Bot sent a message ' + botMessage.content);
 
     // emit lại message bot
     client.emit('chat', {
@@ -85,16 +98,24 @@ export class ChatGateway implements OnGatewayConnection {
     });
   }
 
-  private extractIds(client: Socket) {
-    const { accountId, chatbotId, apiKey } = client.handshake.query;
-
-    if (!accountId || !chatbotId) {
-      throw new Error('accountId and chatbotId are required');
+  private async extractIds(client: Socket): Promise<ExtractIds> {
+    const defaultIds: ExtractIds = {
+      accountId: null,
+      chatbotId: null,
+      apiKey: null,
+    };
+    const { apiKey } = client.handshake.query;
+    if (!apiKey) {
+      return defaultIds;
+    }
+    const document = await this.apiKeyService.validate(apiKey as string);
+    if (!document) {
+      return defaultIds;
     }
 
     return {
-      accountId: new MongoId(accountId as string),
-      chatbotId: new MongoId(chatbotId as string),
+      accountId: document.account,
+      chatbotId: document.chatbot,
       apiKey: apiKey ? String(apiKey) : '',
     };
   }

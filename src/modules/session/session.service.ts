@@ -32,11 +32,11 @@ export class SessionService {
       session = await this.sessionModel.findById(sessionId);
     }
     const message = await this.messageModel.create({
-      session: session.id,
+      session: session._id,
       sender,
       content,
     });
-    session.messages.push(message.id);
+    session.messages.push(message._id as any);
     await session.save();
     return message;
   }
