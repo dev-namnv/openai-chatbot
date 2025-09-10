@@ -1,0 +1,8 @@
+{
+  "name": "chatbot-worker",
+  "main": "dist/main.js",
+  "compatibility_date": "2025-09-10",
+  "assets": {
+    "directory": "./public",
+  },
+}
