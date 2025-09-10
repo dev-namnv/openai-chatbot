@@ -130,6 +130,5 @@
       "target": "nsis",
       "artifactName": "${productName}.exe"
     }
-  },
-  "packageManager": "yarn@4.5.0"
+  }
 }
