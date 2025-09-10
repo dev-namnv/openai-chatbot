@@ -1,7 +1,8 @@
 {
-  "name": "chatbot-worker",
+  "name": "chatbot",
   "main": "dist/main.js",
   "compatibility_date": "2025-09-10",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./public",
   },
