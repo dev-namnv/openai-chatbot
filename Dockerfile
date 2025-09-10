@@ -8,7 +8,7 @@ COPY package.json yarn.lock ./
 COPY tsconfig*.json ./
 
 # Cài dependencies bằng Yarn
-RUN yarn install --frozen-lockfile
+RUN yarn install
 
 # Copy toàn bộ mã nguồn
 COPY . .
@@ -29,9 +29,9 @@ COPY --from=builder /app/yarn.lock ./
 # Tuỳ chọn: copy các .env.* nếu cần
 COPY --from=builder /app/.env* ./
 
-ENV PORT=3000
+ENV PORT=80
 ENV NODE_ENV=production
 
-EXPOSE 3000
+EXPOSE 80
 
 CMD ["node", "dist/main"]
