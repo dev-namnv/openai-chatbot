@@ -29,7 +29,7 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('api-docs', app, document);
 
   app.enableCors({
-    origin: '*',
+    origin: [/^http:\/\/localhost:\d+$/, 'https://ai-chatbot-ccdd1.web.app'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: '*',
   });
