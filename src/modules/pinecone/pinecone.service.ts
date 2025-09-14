@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Index, Pinecone } from '@pinecone-database/pinecone';
-import { nanoid } from 'nanoid';
 import slugify from 'slugify';
 import { LoggerService } from 'src/common/logger';
 import enviroment from 'src/config/enviroment';
@@ -65,9 +64,8 @@ export class PineconeService {
       lower: true,
       strict: true,
     });
-    const id = nanoid(6);
 
-    const indexName = `${base}-${id}`.slice(0, 63);
+    const indexName = `${base}`.slice(0, 63);
 
     return indexName;
   }
