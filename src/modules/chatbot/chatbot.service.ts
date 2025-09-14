@@ -126,7 +126,7 @@ export class ChatbotService {
   async findChatbot(chatbotId: MongoId, accountId: any) {
     const chatbot = await this.chatbotModel.findOne({
       _id: chatbotId,
-      account: accountId,
+      account: new MongoId(accountId),
     });
     return chatbot;
   }
@@ -143,6 +143,8 @@ export class ChatbotService {
   }
 
   async getSystemPrompt(chatbot: Chatbot, message: string) {
+    // Detect language
+    const lang = await this.openaiService.detectLanguage(message);
     // Tạo embedding cho message
     const queryEmbedding = await this.openaiService.getEmbedding(message);
 
@@ -157,23 +159,26 @@ export class ChatbotService {
 
     const matches = queryResult.matches || [];
     const context = matches.map((m) => m.metadata?.text).join('\n');
-    const persona = `
-    Bạn là ${chatbot.ownerName || 'chủ nhân của chatbot'}, 
-    hiện tại công việc là ${chatbot.role}.
-    Khi trả lời, bạn phải nhập vai chính chủ, 
-    không được nói mình là chatbot hay trợ lý ảo.
-    `;
+    const persona =
+      lang === 'Vietnamese'
+        ? `Bạn là ${chatbot.ownerName || 'chủ nhân của chatbot'}, 
+     hiện tại công việc là ${chatbot.role}.
+     Khi trả lời, bạn phải nhập vai chính chủ, 
+     không được nói mình là chatbot hay trợ lý ảo.`
+        : `You are ${chatbot.ownerName || 'the chatbot owner'}, currently working as ${chatbot.role}.
+     When replying, you must role-play as this person,
+     never say you are a chatbot or virtual assistant.`;
 
     const systemPrompt = `
-    ${persona}
+      ${persona}
 
-    Dữ liệu liên quan từ Pinecone:
-    ${context || '[Không có dữ liệu phù hợp]'}
+      Related data from Pinecone:
+      ${context || '[No relevant data found]'}
 
-    Nguyên tắc:
-    - Trả lời tự nhiên như người thật đang trò chuyện.
-    - Nếu không có thông tin trong dữ liệu, có thể trả lời khéo léo hoặc nói "Tôi chưa có thông tin đó".
-    - Trả lời bằng ngôn ngữ mà người dùng hỏi.
+      Rules:
+      - Answer naturally like a human is chatting.
+      - If no information is available in the data, politely say you don't know.
+      - Always reply in ${lang === 'Vietnamese' ? 'Vietnamese' : 'English'}.
     `;
 
     return systemPrompt;

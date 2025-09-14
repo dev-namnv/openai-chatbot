@@ -17,10 +17,14 @@ export class ChatbotController {
   @ApiOperation({ summary: 'Chat' })
   @Auth()
   @Post(':id/chat')
-  async chat(@Body() dto: ChatDto, @CurrentAccount() account: Account) {
+  async chat(
+    @Body() dto: ChatDto,
+    @Param() idDto: IdDto,
+    @CurrentAccount() account: Account,
+  ) {
     return this.chatbotService.chat(
       account.id,
-      new MongoId(dto.chatbotId),
+      new MongoId(idDto.id),
       dto.message,
       new MongoId(dto.chatId),
     );

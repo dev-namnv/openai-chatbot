@@ -60,4 +60,20 @@ export class OpenAIService {
     const vector = resp.data[0].embedding;
     return vector;
   }
+
+  async detectLanguage(text: string): Promise<string> {
+    const detectRes = await this.client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            "Detect the language of the following text. Reply with only the language name in English, e.g., 'English', 'Vietnamese', 'Japanese'.",
+        },
+        { role: 'user', content: text },
+      ],
+    });
+
+    return detectRes.choices[0]?.message?.content?.trim();
+  }
 }
