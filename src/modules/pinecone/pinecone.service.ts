@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import { LoggerService } from 'src/common/logger';
 import enviroment from 'src/config/enviroment';
 import { ChatbotType } from 'src/schemas/chatbot';
+import { uid } from 'uid';
 
 export enum DimensionSize {
   SMALL = 1536,
@@ -64,8 +65,9 @@ export class PineconeService {
       lower: true,
       strict: true,
     });
+    const id = uid(6);
 
-    const indexName = `${base}`.slice(0, 63);
+    const indexName = `${base}-${id}`.slice(0, 63);
 
     return indexName;
   }

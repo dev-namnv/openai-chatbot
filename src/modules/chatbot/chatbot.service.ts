@@ -12,6 +12,7 @@ import enviroment from 'src/config/enviroment';
 import { Chatbot } from 'src/schemas/chatbot';
 import { Knowledge } from 'src/schemas/knowledge';
 import { Sender } from 'src/schemas/message';
+import { uid } from 'uid';
 import { MongoId } from '../../interfaces/mongoose.interface';
 import { Account } from '../../schemas/account';
 import { ApiKeyService } from '../apikey/apikey.service';
@@ -93,7 +94,7 @@ export class ChatbotService {
       const vector = await this.openaiService.getEmbedding(text);
 
       // 2. Tạo id duy nhất cho Pinecone vector
-      const pineconeId = new MongoId();
+      const pineconeId = uid(16);
 
       // 3. Lưu knowledge vào MongoDB
       const knowledge = await this.knowledgeModel.create({
@@ -106,7 +107,7 @@ export class ChatbotService {
       // 4. Upsert vào Pinecone
       await index.upsert([
         {
-          id: pineconeId.toString(),
+          id: pineconeId,
           values: vector,
           metadata: { chatbotId: chatbotId, text },
         },
