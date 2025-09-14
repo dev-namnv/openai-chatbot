@@ -15,6 +15,11 @@ export class ConfigureChatbotDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   ownerName: string;
 
   @ApiProperty({ enum: ChatbotType })

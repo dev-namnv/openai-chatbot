@@ -31,7 +31,7 @@ export class ApiKeyService {
     }
     return this.apiKeyModel.create({
       account: account._id,
-      chatbot: chatbotId,
+      chatbot: new MongoId(chatbotId),
       key,
     });
   }
@@ -51,5 +51,9 @@ export class ApiKeyService {
 
   async removeApiKey(id: MongoId) {
     return this.apiKeyModel.findByIdAndDelete(id);
+  }
+
+  async listByChatbotIds(chatbotIds: MongoId | unknown[]) {
+    return this.apiKeyModel.find({ chatbot: chatbotIds });
   }
 }

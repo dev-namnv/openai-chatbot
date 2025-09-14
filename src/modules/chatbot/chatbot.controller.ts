@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, CurrentAccount } from 'src/decorators';
 import { IdDto } from 'src/dto/id.dto';
@@ -51,5 +51,13 @@ export class ChatbotController {
     @CurrentAccount() account: Account,
   ) {
     return this.chatbotService.configure(account, dto);
+  }
+
+  @ApiTags('Chatbot')
+  @ApiOperation({ summary: 'List chatbots by account' })
+  @Auth()
+  @Get('all')
+  async listByAccount(@CurrentAccount() account: Account) {
+    return this.chatbotService.listByAccount(account);
   }
 }

@@ -12,6 +12,9 @@ export class Chatbot extends Document {
   @Prop({ type: Types.ObjectId, ref: Account.name, required: true })
   account: Types.ObjectId;
 
+  @Prop()
+  name: string;
+
   @Prop({ required: true, unique: true })
   indexName: string; // Pinecone index name
 

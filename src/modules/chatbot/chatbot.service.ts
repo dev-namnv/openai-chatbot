@@ -192,7 +192,7 @@ export class ChatbotService {
    * @returns Chatbot
    */
   async configure(account: Account, dto: ConfigureChatbotDto) {
-    const { role, metadata, description, ownerName, type } = dto;
+    const { role, metadata, description, ownerName, type, name } = dto;
 
     // Create Pinecone index
     // const indexName = await this.pineconeService.createIndex(
@@ -201,6 +201,7 @@ export class ChatbotService {
     // );
     const indexName = enviroment().pinecone.indexName;
     const chatbot = await this.chatbotModel.create({
+      name,
       account: account._id,
       role,
       type,
@@ -221,6 +222,16 @@ export class ChatbotService {
    * @returns User's Chatbots
    */
   async listByAccount(account: Account) {
-    return this.chatbotModel.find({ account: account.id });
+    const chatbots = await this.chatbotModel.find({ account: account._id });
+    const apiKeys = await this.apiKeyService.listByChatbotIds(
+      chatbots.map((i) => i._id),
+    );
+
+    return chatbots.map((chatbot) => ({
+      ...chatbot.toObject(),
+      apiKey:
+        apiKeys.find((i) => i.chatbot.equals(chatbot._id as MongoId))?.key ||
+        null,
+    }));
   }
 }
