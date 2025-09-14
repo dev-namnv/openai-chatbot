@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { nanoid } from 'nanoid';
 import { ChatCompletionMessageParam } from 'openai/resources/index';
 import { LoggerService } from 'src/common/logger';
 import enviroment from 'src/config/enviroment';
@@ -94,7 +93,7 @@ export class ChatbotService {
       const vector = await this.openaiService.getEmbedding(text);
 
       // 2. Tạo id duy nhất cho Pinecone vector
-      const pineconeId = nanoid(16);
+      const pineconeId = new MongoId();
 
       // 3. Lưu knowledge vào MongoDB
       const knowledge = await this.knowledgeModel.create({
@@ -107,7 +106,7 @@ export class ChatbotService {
       // 4. Upsert vào Pinecone
       await index.upsert([
         {
-          id: pineconeId,
+          id: pineconeId.toString(),
           values: vector,
           metadata: { chatbotId: chatbotId, text },
         },
