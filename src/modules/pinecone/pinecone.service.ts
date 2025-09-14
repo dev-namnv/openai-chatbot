@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Index, Pinecone } from '@pinecone-database/pinecone';
-import { customAlphabet } from 'nanoid';
+import { nanoid } from 'nanoid';
 import slugify from 'slugify';
 import { LoggerService } from 'src/common/logger';
 import enviroment from 'src/config/enviroment';
@@ -15,7 +15,6 @@ export enum DimensionSize {
 export class PineconeService {
   private client: Pinecone;
   public index: Index;
-  private nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
   constructor(private readonly logger: LoggerService) {
     this.client = new Pinecone({
@@ -66,8 +65,8 @@ export class PineconeService {
       lower: true,
       strict: true,
     });
+    const id = nanoid(6);
 
-    const id = this.nanoid();
     const indexName = `${base}-${id}`.slice(0, 63);
 
     return indexName;
