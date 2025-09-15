@@ -39,7 +39,6 @@ async function bootstrap(): Promise<void> {
       'X-Requested-With',
     ],
     exposedHeaders: ['Authorization'],
-    credentials: true,
     optionsSuccessStatus: 204,
   });
 
