@@ -30,9 +30,10 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('api-docs', app, document);
 
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: '*',
+    origin: ['http://localhost:5173', 'https://ai-chatbot-ccdd1.web.app'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.useGlobalPipes(new ValidationPipe());
