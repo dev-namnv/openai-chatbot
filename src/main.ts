@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
   const options = new DocumentBuilder()
     .setTitle('API Documents')
     .setVersion('1.0.0')
+    .addServer('/api/v1')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
@@ -36,6 +37,7 @@ async function bootstrap(): Promise<void> {
   });
 
   app.useGlobalPipes(new ValidationPipe());
+  app.setGlobalPrefix('api/v1');
   await app.listen(config.port, '0.0.0.0');
   const appURL = await app.getUrl();
 

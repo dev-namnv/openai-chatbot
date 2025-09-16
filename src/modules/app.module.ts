@@ -31,11 +31,12 @@ import { PineconeModule } from './pinecone/pinecone.module';
     DatabaseModule,
     ServeStaticModule.forRoot({
       renderPath: '/',
-      rootPath: join(__dirname, '..', '../client/build'),
+      rootPath: join(__dirname, '..', '../client/dist'),
+      exclude: ['/api*'],
     }),
     ServeStaticModule.forRoot({
       renderPath: '/assets',
-      rootPath: join(__dirname, '..', '../client/build/assets'),
+      rootPath: join(__dirname, '..', '../client/dist/assets'),
     }),
     CacheModule.register({
       ttl: timeout.halfAnHour,
