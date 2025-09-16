@@ -7,9 +7,7 @@ import enviroment from './config/enviroment';
 import { AppModule } from './modules/app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: false,
-  });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(
     ['/api-docs'],
     basicAuth({
@@ -31,12 +29,12 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api-docs', app, document);
 
-  // app.enableCors({
-  //   origin: ['http://localhost:5173', 'https://ai-chatbot-ccdd1.web.app'],
-  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  //   credentials: true,
-  //   allowedHeaders: ['Content-Type', 'Authorization'],
-  // });
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-TypeType, Authorization',
+  });
 
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix('api/v1');
