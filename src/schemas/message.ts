@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Session } from './session';
+import { Thread } from './thread';
 
 export enum Sender {
   USER = 'user',
@@ -9,8 +9,8 @@ export enum Sender {
 
 @Schema({ timestamps: true, collection: 'messages' })
 export class Message extends Document {
-  @Prop({ type: Types.ObjectId, ref: Session.name, required: true })
-  session: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: Thread.name, required: true })
+  thread: Types.ObjectId;
 
   @Prop({ required: true, enum: Sender })
   sender: Sender;

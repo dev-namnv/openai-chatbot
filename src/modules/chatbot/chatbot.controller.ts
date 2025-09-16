@@ -60,4 +60,12 @@ export class ChatbotController {
   async listByAccount(@CurrentAccount() account: Account) {
     return this.chatbotService.listByAccount(account);
   }
+
+  @ApiTags('Chatbot')
+  @ApiOperation({ summary: 'Find Chatbot' })
+  @Auth()
+  @Get(':id')
+  async findById(@Param() idDto: IdDto, @CurrentAccount() account: Account) {
+    return this.chatbotService.findChatbot(new MongoId(idDto.id), account._id);
+  }
 }

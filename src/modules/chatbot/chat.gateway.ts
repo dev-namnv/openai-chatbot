@@ -12,7 +12,7 @@ import { MongoId } from 'src/interfaces/mongoose.interface';
 import { Sender } from 'src/schemas/message';
 import { ApiKeyService } from '../apikey/apikey.service';
 import { ChatbotService } from '../chatbot/chatbot.service';
-import { SessionService } from '../session/session.service';
+import { ThreadService } from '../thread/thread.service';
 
 interface ExtractIds {
   accountId: MongoId | null;
@@ -29,7 +29,7 @@ export class ChatGateway implements OnGatewayConnection {
 
   constructor(
     private readonly chatbotService: ChatbotService,
-    private readonly sessionService: SessionService,
+    private readonly threadService: ThreadService,
     private readonly logger: LoggerService,
     private readonly apiKeyService: ApiKeyService,
   ) {}
@@ -50,27 +50,27 @@ export class ChatGateway implements OnGatewayConnection {
 
   @SubscribeMessage('chat')
   async handleChat(
-    @MessageBody() data: { sessionId?: string; message: string },
+    @MessageBody() data: { threadId?: string; message: string },
     @ConnectedSocket() client: Socket,
   ) {
     this.logger.log('User sent a message ' + data.message);
-    let sessionId = data.sessionId ? new MongoId(data.sessionId) : undefined;
+    let threadId = data.threadId ? new MongoId(data.threadId) : undefined;
     const message = data.message;
     const { chatbotId, accountId } = await this.extractIds(client);
 
     // Save user's message
-    const userMessage = await this.sessionService.saveMessage(
+    const userMessage = await this.threadService.saveMessage(
       chatbotId,
       Sender.USER,
       message,
-      sessionId,
+      threadId,
     );
-    if (!sessionId) {
-      sessionId = userMessage.session;
+    if (!threadId) {
+      threadId = userMessage.thread;
     }
     // emit lại message user
     client.emit('chat', {
-      sessionId,
+      threadId,
       ...userMessage.toObject(),
     });
 
@@ -79,21 +79,21 @@ export class ChatGateway implements OnGatewayConnection {
       accountId,
       chatbotId,
       data.message,
-      sessionId,
+      threadId,
     );
 
     // Save bot's message
-    const botMessage = await this.sessionService.saveMessage(
+    const botMessage = await this.threadService.saveMessage(
       chatbotId,
       Sender.BOT,
       botReply.answer,
-      sessionId,
+      threadId,
     );
     this.logger.log('Bot sent a message ' + botMessage.content);
 
     // emit lại message bot
     client.emit('chat', {
-      sessionId,
+      threadId,
       ...botMessage.toObject(),
     });
   }

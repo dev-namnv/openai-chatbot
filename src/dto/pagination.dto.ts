@@ -1,6 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { SortOrder } from 'mongoose';
 
 class Search {
@@ -15,12 +25,12 @@ class Search {
 }
 
 class Sort {
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
   @IsNotEmpty()
   field: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
   @IsIn([-1, 1, 'asc', 'ascending', 'desc', 'descending'])
   @IsNotEmpty()
@@ -29,15 +39,17 @@ class Sort {
 
 export class PaginationDto {
   @ApiProperty({ required: false, default: 1 })
+  @Type(() => Number)
   @Min(1)
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   page: number;
 
   @ApiProperty({ required: false, default: 5 })
+  @Type(() => Number)
   @Min(1)
   @Max(100)
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   limit: number;
 

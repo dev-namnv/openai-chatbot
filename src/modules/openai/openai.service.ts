@@ -76,4 +76,31 @@ export class OpenAIService {
 
     return detectRes.choices[0]?.message?.content?.trim();
   }
+
+  async generateTitle(message: string): Promise<string> {
+    const prompt = `
+      You are a helpful assistant that generates short and clear titles for chat sessions.
+      Rules:
+      - Always use the same language as the user's message.
+      - The title must be concise (3–6 words).
+      - Do not add quotes or punctuation unless necessary.
+      - Do not mention "conversation" or "chat".
+      - Focus on the main topic of the user's message.
+
+      User message: "${message}"
+      Title:
+    `;
+    const detectRes = await this.client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 20,
+    });
+
+    return detectRes.choices[0]?.message?.content?.trim();
+  }
 }

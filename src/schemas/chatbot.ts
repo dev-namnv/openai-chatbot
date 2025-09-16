@@ -15,8 +15,8 @@ export class Chatbot extends Document {
   @Prop()
   name: string;
 
-  @Prop({ required: true, unique: true })
-  indexName: string; // Pinecone index name
+  @Prop({ required: true })
+  indexName: string;
 
   @Prop()
   ownerName: string;

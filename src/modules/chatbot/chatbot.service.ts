@@ -18,7 +18,7 @@ import { Account } from '../../schemas/account';
 import { ApiKeyService } from '../apikey/apikey.service';
 import { OpenAIService } from '../openai/openai.service';
 import { PineconeService } from '../pinecone/pinecone.service';
-import { SessionService } from '../session/session.service';
+import { ThreadService } from '../thread/thread.service';
 import { ConfigureChatbotDto } from './dto/ConfigureChatbot.dto';
 
 @Injectable()
@@ -33,7 +33,7 @@ export class ChatbotService {
     private readonly logger: LoggerService,
     @Inject(forwardRef(() => ApiKeyService))
     private readonly apiKeyService: ApiKeyService,
-    private readonly sessionService: SessionService,
+    private readonly threadService: ThreadService,
   ) {}
 
   /**
@@ -43,7 +43,7 @@ export class ChatbotService {
     accountId: MongoId,
     chatbotId: MongoId,
     message: string,
-    sessionId?: MongoId,
+    threadId?: MongoId,
   ) {
     try {
       // Lấy thông tin chatbot
@@ -53,8 +53,8 @@ export class ChatbotService {
       }
 
       const systemPrompt = await this.getSystemPrompt(chatbot, message);
-      const history = sessionId
-        ? await this.getCompletionMessages(new MongoId(sessionId))
+      const history = threadId
+        ? await this.getCompletionMessages(new MongoId(threadId))
         : [];
 
       // Gửi vào OpenAI
@@ -131,8 +131,8 @@ export class ChatbotService {
     return chatbot;
   }
 
-  async getCompletionMessages(sessionId: MongoId) {
-    const sessionMessages = await this.sessionService.getMessages(sessionId);
+  async getCompletionMessages(threadId: MongoId) {
+    const sessionMessages = await this.threadService.getMessages(threadId);
     const history: ChatCompletionMessageParam[] = sessionMessages.map(
       (msg) => ({
         role: msg.sender === Sender.USER ? 'user' : 'assistant',

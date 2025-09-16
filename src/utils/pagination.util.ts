@@ -38,13 +38,21 @@ interface QueryByPagination<Doc> {
 }
 
 const PaginationUtil = {
-  getPaginationParams(paginationDto: PaginationDto): PaginationParams {
+  getParams(paginationDto: PaginationDto): PaginationParams {
     const { page, limit, sort, search } = paginationDto;
     return { page, limit, sort, search };
   },
 
-  getQueryByPagination<T>(paginationDto: PaginationDto, initialMatch?: FilterQuery<T>): QueryByPagination<T> {
-    const { page = 1, limit = 5, sort: sortParams, search: searchParams } = paginationDto;
+  getQueryParams<T>(
+    paginationDto: PaginationDto,
+    initialMatch?: FilterQuery<T>,
+  ): QueryByPagination<T> {
+    const {
+      page = 1,
+      limit = 5,
+      sort: sortParams,
+      search: searchParams,
+    } = paginationDto;
     const skip = (page - 1) * limit;
     let sort: { [key: string]: SortOrder } = { _id: 'asc' };
     if (sortParams) {
@@ -68,14 +76,14 @@ const PaginationUtil = {
     return { page, limit, sort, match, skip };
   },
 
-  getPaginationResponse<T>(body: PaginationBody<T>): PaginationResponse<T> {
+  getResponse<T>(body: PaginationBody<T>): PaginationResponse<T> {
     const { page, limit, data, total } = body;
     return {
-      page,
+      page: Number(page),
       data,
       total,
-      perPage: limit,
-      lastPage: Math.ceil(total / limit) || 1,
+      perPage: Number(limit),
+      lastPage: Math.ceil(total / Number(limit)) || 1,
     };
   },
   async response<T>(
@@ -84,7 +92,10 @@ const PaginationUtil = {
     initialMatch: FilterQuery<T> = {},
     populates?: PopulateOptions[],
   ): Promise<PaginationResponse<T>> {
-    const { page, limit, sort, match, skip } = this.getQueryByPagination(paginationDto, initialMatch);
+    const { page, limit, sort, match, skip } = this.getQueryParams(
+      paginationDto,
+      initialMatch,
+    );
     let query = model.find(match).sort(sort).limit(limit).skip(skip);
     if (populates) {
       populates.forEach((item) => {
@@ -93,8 +104,11 @@ const PaginationUtil = {
         query = query.populate(item);
       });
     }
-    const [data, total] = await Promise.all([query, model.countDocuments(match)]);
-    return this.getPaginationResponse({
+    const [data, total] = await Promise.all([
+      query,
+      model.countDocuments(match),
+    ]);
+    return this.getResponse({
       page,
       limit,
       data: data as Array<T>,
